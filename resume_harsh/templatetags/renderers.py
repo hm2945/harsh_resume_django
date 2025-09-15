@@ -6,8 +6,6 @@ from django.utils.safestring import mark_safe
 
 
 #Render the resume page via a Django template *tag* so the template itself so no HTML 
-
-
 register = template.Library()
 ACCENT = "#2A0761"       
 CONTAINER_W = "850px"    
@@ -19,7 +17,8 @@ def _fmt_range(start: Optional[str], end: Optional[str]) -> str:
     return (start or end or "")
 
 def _css() -> str:
-    return f"""
+    # Return the CSS styles as a <style> blocck 
+    return mark_safe(f"""
 <style>
 :root {{ --accent: {ACCENT}; }}
 *{{box-sizing:border-box}}
@@ -42,8 +41,7 @@ a{{color:var(--accent);text-decoration:none}} a:hover{{text-decoration:underline
   a{{color:inherit;text-decoration:none}}
 }}
 </style>
-""".strip()
-
+""").strip()
 def _header(r: Mapping[str, str]) -> str:
     """Name + contact row (name centered)."""
     esc = conditional_escape
@@ -125,12 +123,13 @@ def _education(items: Iterable[Mapping[str, str]]) -> str:
 def render_full_resume(resume: Mapping[str, object]) -> str:
     """
     Build the entire resume page as HTML from Python data.
-    Called from the template so the template itself contains no hard-coded HTML.
     """
     esc_name = conditional_escape(resume["name"])
-    head = format_html(
-        '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>{} — Resume</title>{}</head><body>',
-        esc_name, _css()
+    head = mark_safe(
+        f"<!doctype html><html lang='en'><head>"
+        f"<meta charset='utf-8'>"
+        f"<title>{conditional_escape(resume['name'])} — Resume</title>"
+        f"{_css()}</head><body>"
     )
     parts = [
         "<main class='container'>",
@@ -142,5 +141,6 @@ def render_full_resume(resume: Mapping[str, object]) -> str:
         _section("Certifications", _pairs(resume["certs"], "name", "date")),
         _section("Education", _education(resume["education"])),
         "</main>",
+        "</body></html>",
     ]
-    return mark_safe(head + "".join(parts) + "</body></html>")
+    return mark_safe(head + "".join(parts))
